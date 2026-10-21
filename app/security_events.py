@@ -2,8 +2,11 @@
 from datetime import datetime, timezone
 
 from app.database import get_connection
-from app.correlation import correlate_failed_login, correlate_access_denied
-
+from app.correlation import (
+    correlate_failed_login,
+    correlate_access_denied,
+    correlate_multiple_accounts,
+)
 
 def log_security_event(
     event_type,
@@ -42,5 +45,6 @@ def log_security_event(
 
     if event_type == "LOGIN_FAILED":
         correlate_failed_login(ip_address)
+        correlate_multiple_accounts(ip_address)
     elif event_type == "ACCESS_DENIED" and endpoint == "/admin":
         correlate_access_denied(ip_address)
