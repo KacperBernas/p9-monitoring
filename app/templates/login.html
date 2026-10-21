@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="pl">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Logowanie | P9 Security Monitoring</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <main class="login-container">
+        <section class="login-card">
+            <div class="eyebrow">SECURITY OPERATIONS</div>
+            <h1>P9 Monitoring</h1>
+            <p class="muted">Zaloguj się do panelu bezpieczeństwa.</p>
+
+            {% if error %}
+                <div class="error-message">{{ error }}</div>
+            {% endif %}
+
+            <form method="post" action="{{ url_for('login') }}">
+                <label for="username">Użytkownik</label>
+                <input id="username" name="username" autocomplete="username" required>
+
+                <label for="password">Hasło</label>
+                <input id="password" name="password" type="password"
+                       autocomplete="current-password" required>
+
+                <button type="submit">Zaloguj się</button>
+            </form>
+
+            <div class="test-accounts">
+                <strong>Konta laboratoryjne</strong>
+                <p>Administrator: <code>admin</code></p>
+                <p>Użytkownik: <code>student</code></p>
+                <p class="muted">Hasła testowe są opisane w README projektu.</p>
+            </div>
+        </section>
+    </main>
+</body>
+</html>

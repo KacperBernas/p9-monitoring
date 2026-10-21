@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="pl">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Dashboard | P9 Security Monitoring</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header class="topbar">
+        <div>
+            <div class="eyebrow">SECURITY OPERATIONS</div>
+            <strong>P9 Monitoring</strong>
+        </div>
+        <div class="user-area">
+            <span>{{ username }} · {{ role }}</span>
+            <form method="post" action="{{ url_for('logout') }}">
+                <button class="button-secondary" type="submit">Wyloguj</button>
+            </form>
+        </div>
+    </header>
+
+    <main class="dashboard">
+        <section class="page-heading">
+            <div>
+                <h1>Panel monitoringu</h1>
+                <p class="muted">Zdarzenia bezpieczeństwa i stan alertów.</p>
+            </div>
+            <span class="status-indicator">SYSTEM ONLINE</span>
+        </section>
+
+        <section class="metrics">
+            <article class="metric-card">
+                <span>Wszystkie zdarzenia</span>
+                <strong>{{ event_count }}</strong>
+            </article>
+            <article class="metric-card">
+                <span>Nieudane logowania</span>
+                <strong>{{ failed_logins }}</strong>
+            </article>
+            <article class="metric-card">
+                <span>Otwarte alerty</span>
+                <strong>{{ open_alerts }}</strong>
+            </article>
+        </section>
+
+        <section class="panel">
+            <div class="panel-heading">
+                <div>
+                    <h2>Alerty bezpieczeństwa</h2>
+                    <p class="muted">Wykryte podejrzane aktywności.</p>
+                </div>
+            </div>
+
+            {% if alerts %}
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Czas</th>
+                                <th>Alert</th>
+                                <th>Priorytet</th>
+                                <th>Status</th>
+                                <th>Opis</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for alert in alerts %}
+                                <tr>
+                                    <td>{{ alert["timestamp"] }}</td>
+                                    <td>{{ alert["title"] }}</td>
+                                    <td><span class="severity severity-{{ alert['severity']|lower }}">{{ alert["severity"] }}</span></td>
+                                    <td>{{ alert["status"] }}</td>
+                                    <td>{{ alert["description"] }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="empty-state">Brak alertów. Korelację zdarzeń dodamy w kolejnym etapie.</p>
+            {% endif %}
+        </section>
+
+        <section class="panel">
+            <div class="panel-heading">
+                <div>
+                    <h2>Ostatnie zdarzenia</h2>
+                    <p class="muted">Maksymalnie 50 najnowszych wpisów.</p>
+                </div>
+            </div>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Czas</th>
+                            <th>Typ</th>
+                            <th>Priorytet</th>
+                            <th>Użytkownik</th>
+                            <th>Adres IP</th>
+                            <th>Wynik</th>
+                            <th>Szczegóły</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for event in events %}
+                            <tr>
+                                <td>{{ event["timestamp"] }}</td>
+                                <td><code>{{ event["event_type"] }}</code></td>
+                                <td><span class="severity severity-{{ event['severity']|lower }}">{{ event["severity"] }}</span></td>
+                                <td>{{ event["username"] or "—" }}</td>
+                                <td>{{ event["ip_address"] or "—" }}</td>
+                                <td>{{ event["result"] }}</td>
+                                <td>{{ event["details"] or "—" }}</td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="7">Brak zarejestrowanych zdarzeń.</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <footer>Projekt akademicki P9 · Security Monitoring & Observability</footer>
+    </main>
+</body>
+</html>

@@ -1,0 +1,15 @@
+FROM python:3.13-slim
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN python -m pip install --no-cache-dir -r requirements.txt
+
+COPY app.py .
+COPY app/ ./app/
+
+RUN mkdir -p /app/data
+
+EXPOSE 5000
+
+CMD ["python", "app.py"]
