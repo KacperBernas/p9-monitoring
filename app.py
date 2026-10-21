@@ -32,6 +32,30 @@ def assign_request_id():
     g.request_id = str(uuid.uuid4())
 
 
+@app.before_request
+def refresh_session_role():
+    username = session.get("username")
+
+    if not username:
+        return
+
+    connection = get_connection()
+
+    try:
+        user = connection.execute(
+            "SELECT role FROM users WHERE username = ?",
+            (username,),
+        ).fetchone()
+    finally:
+        connection.close()
+
+    if user is None:
+        session.clear()
+    else:
+        session["role"] = user["role"]
+
+
+
 def initialize_users():
     connection = get_connection()
 
@@ -153,6 +177,7 @@ def dashboard():
         "AUTHZ_DENIED",
         "ACCESS_DENIED",
         "ROLE_CHANGED",
+        "USER_CREATED",
     }
     allowed_severities = {"INFO", "WARNING", "HIGH"}
 
@@ -251,6 +276,7 @@ def admin():
     return redirect(url_for("manage_role"))
 
 
+
 @app.route("/admin/role", methods=["GET", "POST"])
 def manage_role():
     username = session.get("username")
@@ -262,7 +288,7 @@ def manage_role():
             result="FAILURE",
             ip_address=client_ip(),
             endpoint="/admin/role",
-            details="Unauthenticated attempt to manage user roles",
+            details="Unauthenticated attempt to manage users",
         )
         return "403 Forbidden", 403
 
@@ -274,72 +300,145 @@ def manage_role():
             username=username,
             ip_address=client_ip(),
             endpoint="/admin/role",
-            details="Non-admin attempted to manage user roles",
+            details="Non-admin attempted to manage users",
         )
         return "403 Forbidden", 403
 
     message = ""
+    action = ""
 
     if request.method == "POST":
-        target_username = request.form.get("username", "").strip()
-        new_role = request.form.get("role", "").strip()
+        action = request.form.get("action", "").strip()
 
-        if target_username != "student" or new_role not in {"user", "admin"}:
-            message = "Nieprawidłowy użytkownik lub rola."
+        if action == "create":
+            new_username = request.form.get("new_username", "").strip()
+            new_password = request.form.get("new_password", "")
+            new_role = request.form.get("new_role", "user").strip()
+
+            valid_username = (
+                3 <= len(new_username) <= 50
+                and all(
+                    char.isascii()
+                    and (char.isalnum() or char in "_.-")
+                    for char in new_username
+                )
+            )
+
+            if not valid_username:
+                message = (
+                    "Login musi mieć 3–50 znaków: litery ASCII, "
+                    "cyfry, kropka, myślnik lub podkreślenie."
+                )
+            elif not 12 <= len(new_password) <= 128:
+                message = "Hasło musi mieć od 12 do 128 znaków."
+            elif new_role not in {"user", "admin"}:
+                message = "Nieprawidłowa rola."
+            else:
+                connection = get_connection()
+
+                try:
+                    existing = connection.execute(
+                        "SELECT id FROM users WHERE username = ?",
+                        (new_username,),
+                    ).fetchone()
+
+                    if existing:
+                        message = "Użytkownik o takim loginie już istnieje."
+                    else:
+                        connection.execute(
+                            """
+                            INSERT INTO users (username, password_hash, role)
+                            VALUES (?, ?, ?)
+                            """,
+                            (
+                                new_username,
+                                generate_password_hash(new_password),
+                                new_role,
+                            ),
+                        )
+                        connection.commit()
+
+                        log_security_event(
+                            event_type="USER_CREATED",
+                            severity="WARNING",
+                            result="SUCCESS",
+                            username=username,
+                            ip_address=client_ip(),
+                            endpoint="/admin/role",
+                            details=(
+                                f"Administrator created user {new_username} "
+                                f"with role {new_role}"
+                            ),
+                        )
+
+                        message = f"Utworzono użytkownika {new_username}."
+                finally:
+                    connection.close()
+
+        elif action == "change_role":
+            target_username = request.form.get("username", "").strip()
+            new_role = request.form.get("role", "").strip()
+
+            if new_role not in {"user", "admin"}:
+                message = "Nieprawidłowa rola."
+            elif target_username == username:
+                message = "Nie można zmienić własnej roli."
+            else:
+                connection = get_connection()
+
+                try:
+                    target = connection.execute(
+                        "SELECT username, role FROM users WHERE username = ?",
+                        (target_username,),
+                    ).fetchone()
+
+                    if target is None:
+                        message = "Nie znaleziono użytkownika."
+                    elif target["role"] == new_role:
+                        message = "Użytkownik ma już wybraną rolę."
+                    else:
+                        old_role = target["role"]
+
+                        connection.execute(
+                            "UPDATE users SET role = ? WHERE username = ?",
+                            (new_role, target_username),
+                        )
+                        connection.commit()
+
+                        log_security_event(
+                            event_type="ROLE_CHANGED",
+                            severity="WARNING",
+                            result="SUCCESS",
+                            username=username,
+                            ip_address=client_ip(),
+                            endpoint="/admin/role",
+                            details=(
+                                f"Role of {target_username} changed "
+                                f"from {old_role} to {new_role}"
+                            ),
+                        )
+
+                        message = (
+                            f"Zmieniono rolę użytkownika {target_username} "
+                            f"z {old_role} na {new_role}."
+                        )
+                finally:
+                    connection.close()
         else:
-            connection = get_connection()
-
-            try:
-                target = connection.execute(
-                    "SELECT username, role FROM users WHERE username = ?",
-                    (target_username,),
-                ).fetchone()
-
-                if target is None:
-                    message = "Nie znaleziono użytkownika."
-                elif target["role"] == new_role:
-                    message = "Użytkownik ma już wybraną rolę."
-                else:
-                    old_role = target["role"]
-
-                    connection.execute(
-                        "UPDATE users SET role = ? WHERE username = ?",
-                        (new_role, target_username),
-                    )
-                    connection.commit()
-
-                    log_security_event(
-                        event_type="ROLE_CHANGED",
-                        severity="WARNING",
-                        result="SUCCESS",
-                        username=username,
-                        ip_address=client_ip(),
-                        endpoint="/admin/role",
-                        details=(
-                            f"Role of {target_username} changed "
-                            f"from {old_role} to {new_role}"
-                        ),
-                    )
-
-                    message = (
-                        f"Zmieniono rolę użytkownika {target_username} "
-                        f"z {old_role} na {new_role}."
-                    )
-            finally:
-                connection.close()
+            message = "Nieznana operacja."
 
     connection = get_connection()
 
     try:
-        target = connection.execute(
-            "SELECT username, role FROM users WHERE username = 'student'"
-        ).fetchone()
+        users = connection.execute(
+            "SELECT id, username, role FROM users ORDER BY username"
+        ).fetchall()
     finally:
         connection.close()
 
     return render_template(
         "manage_role.html",
-        target=target,
+        users=users,
         message=message,
     )
 
