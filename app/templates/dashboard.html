@@ -85,6 +85,49 @@
         <section class="panel">
             <div class="panel-heading">
                 <div>
+                    <h2>Filtrowanie zdarzeń</h2>
+                    <p class="muted">Zawęź listę zdarzeń według typu, poziomu ważności lub użytkownika.</p>
+                </div>
+            </div>
+
+            <form method="get" action="{{ url_for('dashboard') }}" class="filters">
+                <div>
+                    <label for="event_type">Typ zdarzenia</label>
+                    <select id="event_type" name="event_type">
+                        <option value="">Wszystkie typy</option>
+                        <option value="LOGIN_SUCCESS" {% if event_type_filter == 'LOGIN_SUCCESS' %}selected{% endif %}>Udane logowanie</option>
+                        <option value="LOGIN_FAILED" {% if event_type_filter == 'LOGIN_FAILED' %}selected{% endif %}>Nieudane logowanie</option>
+                        <option value="LOGOUT" {% if event_type_filter == 'LOGOUT' %}selected{% endif %}>Wylogowanie</option>
+                        <option value="AUTHZ_DENIED" {% if event_type_filter == 'AUTHZ_DENIED' %}selected{% endif %}>Brak uwierzytelnienia</option>
+                        <option value="ACCESS_DENIED" {% if event_type_filter == 'ACCESS_DENIED' %}selected{% endif %}>Odmowa dostępu</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="severity">Poziom ważności</label>
+                    <select id="severity" name="severity">
+                        <option value="">Wszystkie poziomy</option>
+                        <option value="INFO" {% if severity_filter == 'INFO' %}selected{% endif %}>INFO</option>
+                        <option value="WARNING" {% if severity_filter == 'WARNING' %}selected{% endif %}>WARNING</option>
+                        <option value="HIGH" {% if severity_filter == 'HIGH' %}selected{% endif %}>HIGH</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="username">Użytkownik</label>
+                    <input id="username" name="username" type="text" value="{{ username_filter }}" placeholder="Wpisz nazwę użytkownika">
+                </div>
+
+                <div class="filter-actions">
+                    <button type="submit">Filtruj</button>
+                    <a class="button-secondary" href="{{ url_for('dashboard') }}">Wyczyść</a>
+                </div>
+            </form>
+        </section>
+
+        <section class="panel">
+            <div class="panel-heading">
+                <div>
                     <h2>Ostatnie zdarzenia</h2>
                     <p class="muted">Maksymalnie 50 najnowszych wpisów.</p>
                 </div>

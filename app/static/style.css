@@ -298,4 +298,50 @@ footer {
     .login-card {
         padding: 24px;
     }
+    
+.filters {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    align-items: end;
+}
+
+.filters label {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--text-secondary, #aab4c5);
+    font-size: 0.9rem;
+}
+
+.filters input,
+.filters select {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    padding: 11px 12px;
+    border: 1px solid var(--border-color, #344054);
+    border-radius: 8px;
+    background: var(--input-background, #151b28);
+    color: inherit;
+    font: inherit;
+}
+
+.filter-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+}
+
+.filter-actions a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    min-height: 42px;
+    padding: 10px 14px;
+    text-decoration: none;
+    border-radius: 8px;
+}
+
 }

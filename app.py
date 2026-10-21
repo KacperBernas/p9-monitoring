@@ -111,11 +111,47 @@ def dashboard():
         )
         return redirect(url_for("login"))
 
+
+    event_type = request.args.get("event_type", "").strip()
+    severity = request.args.get("severity", "").strip()
+    username_filter = request.args.get("username", "").strip()
+
+    allowed_event_types = {
+        "LOGIN_SUCCESS",
+        "LOGIN_FAILED",
+        "LOGOUT",
+        "AUTHZ_DENIED",
+        "ACCESS_DENIED",
+    }
+    allowed_severities = {"INFO", "WARNING", "HIGH"}
+
+    if event_type not in allowed_event_types:
+        event_type = ""
+
+    if severity not in allowed_severities:
+        severity = ""
+
     connection = get_connection()
 
-    events = connection.execute(
-        "SELECT * FROM security_events ORDER BY id DESC LIMIT 50"
-    ).fetchall()
+    query = "SELECT * FROM security_events WHERE 1=1"
+    parameters = []
+
+    if event_type:
+        query += " AND event_type = ?"
+        parameters.append(event_type)
+
+    if severity:
+        query += " AND severity = ?"
+        parameters.append(severity)
+
+    if username_filter:
+        query += " AND username LIKE ?"
+        parameters.append(f"%{username_filter}%")
+
+    query += " ORDER BY id DESC LIMIT 50"
+
+    events = connection.execute(query, parameters).fetchall()
+
 
     alerts = connection.execute(
         "SELECT * FROM alerts ORDER BY id DESC LIMIT 20"
@@ -144,6 +180,9 @@ def dashboard():
         open_alerts=open_alerts,
         username=session["username"],
         role=session["role"],
+         event_type_filter=event_type,
+        severity_filter=severity,
+        username_filter=username_filter,
     )
 
 @app.route("/admin")
