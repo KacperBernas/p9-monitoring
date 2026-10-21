@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zarządzanie rolą</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <main class="container">
+        <h1>Zarządzanie uprawnieniami</h1>
+
+        <p>Zalogowany administrator: <strong>{{ session.get('username') }}</strong></p>
+        <p>Użytkownik: <strong>{{ target['username'] }}</strong></p>
+        <p>Aktualna rola: <strong>{{ target['role'] }}</strong></p>
+
+        {% if message %}
+            <p>{{ message }}</p>
+        {% endif %}
+
+        <form method="post" action="{{ url_for('manage_role') }}">
+            <label for="role">Nowa rola</label>
+            <select name="role" id="role" required>
+                <option value="user" {% if target['role'] == 'user' %}selected{% endif %}>user</option>
+                <option value="admin" {% if target['role'] == 'admin' %}selected{% endif %}>admin</option>
+            </select>
+
+            <input type="hidden" name="username" value="student">
+            <button type="submit">Zmień rolę</button>
+        </form>
+
+        <p><a href="{{ url_for('dashboard') }}">Powrót do dashboardu</a></p>
+
+        <form method="post" action="{{ url_for('logout') }}">
+            <button type="submit">Wyloguj</button>
+        </form>
+    </main>
+</body>
+</html>

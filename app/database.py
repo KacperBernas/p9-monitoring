@@ -1,3 +1,4 @@
+
 import sqlite3
 from pathlib import Path
 
@@ -15,39 +16,54 @@ def get_connection():
 def init_database():
     connection = get_connection()
 
-    connection.execute("""
-        CREATE TABLE IF NOT EXISTS security_events (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            timestamp TEXT NOT NULL,
-            event_type TEXT NOT NULL,
-            severity TEXT NOT NULL,
-            username TEXT,
-            ip_address TEXT,
-            endpoint TEXT,
-            result TEXT NOT NULL,
-            details TEXT
-        )
-    """)
+    try:
+        connection.execute("""
+            CREATE TABLE IF NOT EXISTS security_events (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp TEXT NOT NULL,
+                event_type TEXT NOT NULL,
+                severity TEXT NOT NULL,
+                username TEXT,
+                ip_address TEXT,
+                endpoint TEXT,
+                result TEXT NOT NULL,
+                details TEXT,
+                request_id TEXT
+            )
+        """)
 
-    connection.execute("""
-        CREATE TABLE IF NOT EXISTS alerts (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            timestamp TEXT NOT NULL,
-            title TEXT NOT NULL,
-            severity TEXT NOT NULL,
-            description TEXT NOT NULL,
-            status TEXT NOT NULL DEFAULT 'OPEN'
-        )
-    """)
+        columns = connection.execute(
+            "PRAGMA table_info(security_events)"
+        ).fetchall()
 
-    connection.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT NOT NULL UNIQUE,
-            password_hash TEXT NOT NULL,
-            role TEXT NOT NULL DEFAULT 'user'
-        )
-    """)
+        column_names = {column["name"] for column in columns}
 
-    connection.commit()
-    connection.close()
+        if "request_id" not in column_names:
+            connection.execute(
+                "ALTER TABLE security_events ADD COLUMN request_id TEXT"
+            )
+
+        connection.execute("""
+            CREATE TABLE IF NOT EXISTS alerts (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp TEXT NOT NULL,
+                title TEXT NOT NULL,
+                severity TEXT NOT NULL,
+                description TEXT NOT NULL,
+                status TEXT NOT NULL DEFAULT 'OPEN'
+            )
+        """)
+
+        connection.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT NOT NULL UNIQUE,
+                password_hash TEXT NOT NULL,
+                role TEXT NOT NULL DEFAULT 'user'
+            )
+        """)
+
+        connection.commit()
+
+    finally:
+        connection.close()

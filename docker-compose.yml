@@ -1,3 +1,4 @@
+
 services:
   web:
     build: .
@@ -5,3 +6,5 @@ services:
       - "5000:5000"
     volumes:
       - ./data:/app/data
+    environment:
+      SECRET_KEY: ${SECRET_KEY:?Ustaw SECRET_KEY w pliku .env}

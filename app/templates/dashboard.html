@@ -14,6 +14,13 @@
         </div>
         <div class="user-area">
             <span>{{ username }} · {{ role }}</span>
+
+            {% if role == 'admin' %}
+                <a class="button-secondary" href="{{ url_for('manage_role') }}">
+                    Zarządzanie uprawnieniami
+                </a>
+            {% endif %}
+
             <form method="post" action="{{ url_for('logout') }}">
                 <button class="button-secondary" type="submit">Wyloguj</button>
             </form>
@@ -143,26 +150,40 @@
                             <th>Użytkownik</th>
                             <th>Adres IP</th>
                             <th>Wynik</th>
+                            <th>Request ID</th>
                             <th>Szczegóły</th>
                         </tr>
                     </thead>
+                    
                     <tbody>
-                        {% for event in events %}
-                            <tr>
-                                <td>{{ event["timestamp"] }}</td>
-                                <td><code>{{ event["event_type"] }}</code></td>
-                                <td><span class="severity severity-{{ event['severity']|lower }}">{{ event["severity"] }}</span></td>
-                                <td>{{ event["username"] or "—" }}</td>
-                                <td>{{ event["ip_address"] or "—" }}</td>
-                                <td>{{ event["result"] }}</td>
-                                <td>{{ event["details"] or "—" }}</td>
-                            </tr>
-                        {% else %}
-                            <tr>
-                                <td colspan="7">Brak zarejestrowanych zdarzeń.</td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
+    {% for event in events %}
+        <tr>
+            <td>{{ event["timestamp"] }}</td>
+            <td><code>{{ event["event_type"] }}</code></td>
+            <td><span class="severity severity-{{ event['severity']|lower }}">{{ event["severity"] }}</span></td>
+            <td>{{ event["username"] or "—" }}</td>
+            <td>{{ event["ip_address"] or "—" }}</td>
+            <td>{{ event["result"] }}</td>
+            <td>
+                {% if event["request_id"] %}
+                    <code title="{{ event['request_id'] }}">{{ event["request_id"] }}</code>
+                    <button
+                        type="button"
+                        class="button-secondary"
+                        onclick="navigator.clipboard.writeText('{{ event['request_id'] }}')"
+                    >Kopiuj</button>
+                {% else %}
+                    —
+                {% endif %}
+            </td>
+            <td>{{ event["details"] or "—" }}</td>
+        </tr>
+    {% else %}
+        <tr>
+            <td colspan="8">Brak zarejestrowanych zdarzeń.</td>
+        </tr>
+    {% endfor %}
+</tbody>
                 </table>
             </div>
         </section>
